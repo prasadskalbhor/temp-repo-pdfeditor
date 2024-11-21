@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Adobe PDF Embed API Example</title>
+  </head>
+  <body>
+    <div id="adobe-dc-view"></div>
+<script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
+<script type="text/javascript">
+	document.addEventListener("adobe_dc_view_sdk.ready", function(){ 
+		var adobeDCView = new AdobeDC.View({clientId: "e13680391ec8421795b842ca3d8ef041", divId: "adobe-dc-view"});
+		adobeDCView.previewFile({
+			content:{location: {url: "./mypdf.pdf"}},
+			metaData:{fileName: "Bodea Brochure.pdf"}
+		}, {});
+	});
+</script>
+    <!-- <button id="save-button">Save PDF</button>
+
+    <script>
+      const adobeDCView = new AdobeDC.View({
+        clientId: "e13680391ec8421795b842ca3d8ef041",
+        divId: "adobe-dc-view",
+      });
+
+      const docUrl = "mypdf.pdf";
+
+      adobeDCView.previewFile(
+        {
+          content: { location: { url: docUrl } },
+          metaData: { fileName: "form.pdf" },
+        },
+        {
+          embedMode: "FULL_WINDOW",
+        }
+      );
+
+      // Assuming you have an input field with the name "name"
+      let updatedData = {};
+
+      // Capture updated form data
+      adobeDCView.on("formFieldChanged", function (event) {
+        console.log("hello")
+        updatedData[event.fieldName] = event.value;
+      });
+
+      document.getElementById("save-button").addEventListener("click", function () {
+        console.log("Updated form data:", updatedData);
+
+        // You can then send the updated form data to pdf-lib to generate a new PDF
+        updatePDF(updatedData);
+      });
+
+      function updatePDF(formData) {
+        // Use pdf-lib to update the PDF with the form data
+        // Example: Filling out a text field with pdf-lib
+
+        const { PDFDocument } = require("pdf-lib");
+
+        // Load the original PDF
+        fetch("/path/to/your/form.pdf")
+          .then((res) => res.arrayBuffer())
+          .then(async (data) => {
+            const pdfDoc = await PDFDocument.load(data);
+            const form = pdfDoc.getForm();
+
+            // Update form fields (example)
+            form.getTextField("name").setText(formData.name);
+            form.getTextField("email").setText(formData.email);
+
+            // You can add more form fields as needed
+
+            // Save the updated PDF
+            const pdfBytes = await pdfDoc.save();
+
+            // Create a Blob and download the updated PDF
+            const blob = new Blob([pdfBytes], { type: "application/pdf" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "updated-form.pdf";
+            link.click();
+          });
+      }
+    </script> -->
+  </body>
+</html>
