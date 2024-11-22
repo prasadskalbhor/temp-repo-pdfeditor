@@ -2,50 +2,167 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Adobe PDF Embed API Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Base64 Save Example</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+    <style>
+      body {
+        width: 100%;
+        height: 100vh;
+        overflow-x: hidden;
+        margin: 0;
+        background-color: gainsboro;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+      }
+
+      #toolbar {
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 5px;
+        background-color: crimson;
+      }
+
+      #embeddedView {
+        flex-grow: 1;
+      }
+
+      #submitButton {
+        background-color: darkred;
+        height: 100%;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        margin-right: 6px;
+        border: 1px solid white;
+        max-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      #submitButton:hover {
+        background-color: red;
+      }
+
+      #toolbar p {
+        font-size: 9pt;
+        padding-right: 10px;
+        margin: 5px;
+        color: white;
+      }
+    </style>
   </head>
   <body>
-    <h1>This is pdf editor :: </h1>
-    <div id="adobe-dc-view" style="height: 600px;"></div>
-    <button id="save-button" style="margin-top: 20px;">Save PDF Data</button>
-    <script src="https://acrobatservices.adobe.com/view-sdk/viewer.js"></script>
-    <script>
-      let updatedFormData = {}; // Object to store updated form field data
+    <div class="container">
+      <div id="toolbar">
+        <p>
+          Clicking Submit will convert the ArrayBuffer of the PDF file content
+          into a base64 string and then use that in a data URL to download the
+          file. In practice, you would replace this function with one that
+          submits the base64 content to another process where it can be
+          converted back to a binary PDF.
+        </p>
+        <a id="submitButton">Submit</a>
+      </div>
+      <div id="embeddedView"></div>
+    </div>
 
+    <script>
+      const urlToPDF =
+        "https://assets.codepen.io/4479906/Check_Request_Full.pdf";
+      const clientId = "dda30f284c554924b583141c6fe03f20";
+      const viewerOptions = {
+        embedMode: "FULL_WINDOW",
+        defaultViewMode: "FIT_PAGE",
+        showDownloadPDF: false,
+        showPrintPDF: true,
+        showLeftHandPanel: false,
+        showAnnotationTools: false,
+      };
+
+      const saveOptions = {
+        autoSaveFrequency: 1,
+        enableFocusPolling: true,
+        showSaveButton: false,
+      };
+
+      let savedPDFContent = null;
+
+      // Convert ArrayBuffer to Base64
+      function arrayBufferToBase64(buffer) {
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+      }
+
+      // Handle Submit Button Click
+      function submitButtonClicked() {
+        if (savedPDFContent) {
+          const base64PDF = arrayBufferToBase64(savedPDFContent);
+          const fileURL = `data:application/pdf;base64,${base64PDF}`;
+          window.open(fileURL, "_blank");
+        } else {
+          alert("No PDF content saved. Please try again.");
+        }
+      }
+
+      // Adobe SDK Ready
       document.addEventListener("adobe_dc_view_sdk.ready", function () {
         const adobeDCView = new AdobeDC.View({
-          clientId: "dda30f284c554924b583141c6fe03f20",
-          divId: "adobe-dc-view",
+          clientId: clientId,
+          divId: "embeddedView",
         });
 
-        // Render the PDF with the given URL
+        // Register Save Callback
+        adobeDCView.registerCallback(
+          AdobeDC.View.Enum.CallbackType.SAVE_API,
+          function (metaData, content, options) {
+            savedPDFContent = content; // Store PDF content for download
+            return new Promise((resolve) => {
+              resolve({
+                code: AdobeDC.View.Enum.ApiResponseCode.SUCCESS,
+                data: {
+                  metaData: { fileName: "Check_Request_Full.pdf" },
+                },
+              });
+            });
+          },
+          saveOptions
+        );
+
+        // Load PDF into Viewer
         adobeDCView.previewFile(
           {
-            content: { location: { url: "./mypdf.pdf" } },
-            metaData: { fileName: "mypdf.pdf" },
+            content: {
+              location: { url: urlToPDF },
+            },
+            metaData: { fileName: "Check_Request_Full.pdf" },
           },
-          {}
-        );
-
-        // Add form field interaction handler
-        adobeDCView.registerCallback(
-          AdobeDC.View.Enum.CallbackType.FORM_FIELD_INTERACTION,
-          (event) => {
-            if (event.type === "fieldChanged") {
-              updatedFormData[event.data.fieldName] = event.data.value;
-              console.log("Form Field Updated:", updatedFormData);
-            }
-          },
-          {}
+          viewerOptions
         );
       });
 
-      // Save button click listener
-      document.getElementById("save-button").addEventListener("click", function () {
-        console.log("Final Form Data:", updatedFormData);
-        alert("Form data saved. Check console for details.");
-        // Here, you can pass updatedFormData to your backend or use it with pdf-lib
-      });
+      // Bind Button Click Event
+      document
+        .getElementById("submitButton")
+        .addEventListener("click", submitButtonClicked);
     </script>
   </body>
 </html>
